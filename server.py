@@ -50,7 +50,7 @@ class MyWebServer(socketserver.BaseRequestHandler):
 
             #check if the path is root or not
             if "index.html" not in path:
-                if url[-1] != "/":
+                if path[-1] != "/":
                     #if the url end is not "/"
                     path+="/"
                     self.request.sendall(bytearray(f"HTTP/1.1 301 Moved Permanently\r\nLocation:{url+'/'}\r\n\r\n301 Moved Permanently",'utf-8'))
