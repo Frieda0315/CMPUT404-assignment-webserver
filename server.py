@@ -35,70 +35,67 @@ class MyWebServer(socketserver.BaseRequestHandler):
         method,url = self.parseRequest(self.data.decode('utf-8'))
 
         if method!="GET":
+            #if method is not GET, respond 405
             self.request.sendall(bytearray("HTTP/1.1 405 Method Not Allowed\r\n\r\n405 Method Not Allowed",'utf-8'))
             return
 
-        self.functions(method,url)
-
-    def functions(self,method, url):
-        split = url.split('/')
-        level = 0
-
-        for i in split:
-            if i == "..":
-                level = level -1
-            else:
-                level += 1
-            if level < 0:
+        else:#if method is GET
+            split = url.split('/')#get folders
+            if "../" in split:#if /.. in path, then its out of the ./www file
+            #return 404
                 self.request.sendall(bytearray(f"HTTP/1.1 404 Not Found\r\n\r\n404 Not Found",'utf-8'))
                 return
 
-        path = "./www"+ url
-        print("path", path)
+            path = "./www"+ url
+            print("path", path)
 
-        if url[-1] != "/":
-            if os.path.isdir(path):
-                self.request.sendall(bytearray(f"HTTP/1.1 301 Moved Permanently\r\nLocation:{url+'/'}\r\n\r\n301 Moved Permanently",'utf-8'))
-                return
+            if url[-1] != "/":
+                #if the url end is not "/"
+                if os.path.isdir(path):
+                    path+="/"
+                    self.request.sendall(bytearray(f"HTTP/1.1 301 Moved Permanently\r\nLocation:{url+'/'}\r\n\r\n301 Moved Permanently",'utf-8'))
+                    return
 
-        if not os.path.isfile(path):
-                # The webserver can return index.html from directories (paths that end in /)
+            if not os.path.isfile(path):
                 if path[-1] == '/':
                     path += "index.html"
-                else:  # The webserver can server 404 errors for paths not found
+                else:
                     self.request.sendall(bytearray(f"HTTP/1.1 404 Not Found\r\n\r\n404 Not Found",'utf-8'))
                     return
 
-        if os.path.exists(path):
+            if os.path.exists(path):
+                #if the path exists, read the file
+                try:
+                    with open(path, 'r') as file:
+                        content = file.read()
+                except:
+                    self.request.sendall(bytearray(f"HTTP/1.1 404 Not Found\r\n\r\n404 Not Found",'utf-8'))
+                    return
+                #create respond
+                respond = "HTTP/1.1 200 OK\r\n"
+                respond += "cache-control: no-cache\r\n"
+                if ".css" in url:
+                    respond += "content-type: {};charset=UTF-8\r\n".format("text/css")
+                else:
+                    respond += "content-type: {};charset=UTF-8\r\n".format("text/html")
+                    length = len(content)
+                    respond += "content-length: {}\r\n\n".format(length)
+                    respond += content
+                    self.request.sendall(respond.encode())
+                    return
 
-            try:
-                with open(path, 'r') as file:
-                    content = file.read()
-            except:
+
+            else:
+                #if file path not exist, report 404
                 self.request.sendall(bytearray(f"HTTP/1.1 404 Not Found\r\n\r\n404 Not Found",'utf-8'))
                 return
-
-            response = "HTTP/1.1 200 OK\r\n"
-            response += "cache-control: no-cache\r\n"
-            if ".css" in url:
-                response += "content-type: {};charset=UTF-8\r\n".format("text/css")
-            else:
-                response += "content-type: {};charset=UTF-8\r\n".format("text/html")
-            length = len(content)
-            response += "content-length: {}\r\n\n".format(length)
-            self.request.sendall(response.encode())
-            return
-
-
-        else:
-            self.request.sendall(bytearray(f"HTTP/1.1 404 Not Found\r\n\r\n404 Not Found",'utf-8'))
-            return
 
 
 
     def parseRequest(self, request):
+        #get method and uri
         request = request.strip().split('\n')
-        requestHTTP = request[0]  # GET / HTTP/1.1
+        requestHTTP = request[0]
         element = requestHTTP.split(' ')
 
         return (element[0], element[1])
