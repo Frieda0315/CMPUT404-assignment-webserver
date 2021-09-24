@@ -41,24 +41,24 @@ class MyWebServer(socketserver.BaseRequestHandler):
 
         else:#if method is GET
             split = url.split('/')#get folders
-            if "../" in split:#if /.. in path, then its out of the ./www file
+            if not self.safe_or_not(split):#if /.. in path, then its out of the ./www file
             #return 404
                 self.request.sendall(bytearray(f"HTTP/1.1 404 Not Found\r\n\r\n404 Not Found",'utf-8'))
                 return
 
             path = "./www"+ url
-            print("path", path)
 
-            if url[-1] != "/":
-                #if the url end is not "/"
-                if os.path.isdir(path):
+            #check if the path is root or not
+            if "index.html" not in path:
+                if url[-1] != "/":
+                    #if the url end is not "/"
                     path+="/"
                     self.request.sendall(bytearray(f"HTTP/1.1 301 Moved Permanently\r\nLocation:{url+'/'}\r\n\r\n301 Moved Permanently",'utf-8'))
                     return
 
-            if not os.path.isfile(path):
-                if path[-1] == '/':
+                elif path[-1] == '/':
                     path += "index.html"
+                    print("i am here if file ", path)
                 else:
                     self.request.sendall(bytearray(f"HTTP/1.1 404 Not Found\r\n\r\n404 Not Found",'utf-8'))
                     return
@@ -90,6 +90,17 @@ class MyWebServer(socketserver.BaseRequestHandler):
                 self.request.sendall(bytearray(f"HTTP/1.1 404 Not Found\r\n\r\n404 Not Found",'utf-8'))
                 return
 
+
+    def safe_or_not(self, list1):
+        safe = 0
+        for i in list1:
+            if ".." == i:
+                safe -= 1
+            else:
+                safe += 1
+            if safe < 0:
+                return False
+        return True
 
 
     def parseRequest(self, request):
