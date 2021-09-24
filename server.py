@@ -78,11 +78,11 @@ class MyWebServer(socketserver.BaseRequestHandler):
                     respond += "content-type: {};charset=UTF-8\r\n".format("text/css")
                 else:
                     respond += "content-type: {};charset=UTF-8\r\n".format("text/html")
-                    length = len(content)
-                    respond += "content-length: {}\r\n\n".format(length)
-                    respond += content
-                    self.request.sendall(respond.encode())
-                    return
+                length = len(content)
+                respond += "content-length: {}\r\n\n".format(length)
+                respond += content
+                self.request.sendall(respond.encode())
+                return
 
 
             else:
